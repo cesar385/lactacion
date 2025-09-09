@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Infografía Interactiva - Grupo 25</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #fdfcfb;
+      margin: 0;
+      padding: 0;
+      color: #333;
+    }
+    .poster {
+      width: 100%;
+      min-height: 100vh;
+      margin: 0 auto;
+      background: #ffffff;
+      padding: 20px;
+      display: none;
+      overflow-y: auto;
+    }
+    h1 {
+      text-align: center;
+      font-size: 2em;
+      border-bottom: 3px solid #40916c;
+      padding-bottom: 10px;
+      color: #2d6a4f;
+      margin: 10px 0;
+    }
+    section { margin: 20px 0; }
+    .toggle {
+      cursor: pointer;
+      background: #d8f3dc;
+      padding: 12px;
+      border-radius: 10px;
+      transition: background 0.3s;
+      font-size: 1.1em;
+    }
+    .toggle:hover { background: #b7e4c7; }
+    .content {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.4s ease, padding 0.3s ease;
+      padding: 0 15px;
+      border-left: 6px solid #52b788;
+      margin-top: 10px;
+      border-radius: 6px;
+      background: #f0fdf4;
+    }
+    .content.open { padding: 12px 15px; }
+    ul { list-style: none; padding: 0; }
+    ul li::before { content: '• '; margin-right: 6px; color: #40916c; font-weight: bold; }
+    canvas { max-width: 100%; height: auto !important; margin-top: 15px; }
+    .cover {
+      display: flex; flex-direction: column; justify-content: center; align-items: center;
+      height: 100vh; text-align: center;
+      background: linear-gradient(135deg, #d8f3dc, #b7e4c7);
+      padding: 30px 15px;
+    }
+    .cover img { width: 80%; max-width: 350px; margin-bottom: 20px; }
+    .cover h1 { border: none; font-size: 1.6em; color: #1b4332; margin: 5px 0; }
+    .cover p { font-size: 0.95em; margin: 4px 0; }
+    .start-btn {
+      margin-top: 20px; padding: 12px 20px; font-size: 1.1em;
+      background: #2d6a4f; color: white; border: none; border-radius: 10px;
+      cursor: pointer; transition: background 0.3s;
+    }
+    .start-btn:hover { background: #1b4332; }
+    .integrantes {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 10px 20px;
+      text-align: left;
+      max-width: 700px;
+      margin: 10px auto;
+    }
+    .integrantes ul, .docentes ul {
+      list-style-type: 0; padding-left: 20px; margin: 0;
+    }
+    .docentes { max-width: 700px; margin: 10px auto; text-align: left; }
+
+    /* Imagen en secciones */
+    .section-img {
+      max-width: 100%;
+      border-radius: 10px;
+      margin-top: 15px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      cursor: zoom-in;
+      transition: transform 0.3s;
+    }
+    .section-img:hover { transform: scale(1.02); }
+
+    /* Lightbox */
+    .lightbox {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.8);
+      justify-content: center;
+      align-items: center;
+    }
+    .lightbox img {
+      max-width: 90%;
+      max-height: 90%;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    }
+    .close-btn {
+      position: absolute;
+      top: 20px; right: 30px;
+      font-size: 2em;
+      color: white;
+      cursor: pointer;
+    }
+
+    /* Animación fade-in para bibliografía */
+    .fade-in-list li {
+      opacity: 0; transform: translateY(10px);
+      animation: fadeInUp 0.5s forwards;
+    }
+    .fade-in-list li:nth-child(1) { animation-delay: 0.2s; }
+    .fade-in-list li:nth-child(2) { animation-delay: 0.4s; }
+    .fade-in-list li:nth-child(3) { animation-delay: 0.6s; }
+    @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
+
+    @media (max-width: 768px) {
+      h1 { font-size: 1.6em; }
+      .toggle { font-size: 1em; padding: 10px; }
+      .cover h1 { font-size: 1.4em; }
+      .cover p { font-size: 0.9em; }
+      .start-btn { font-size: 1em; padding: 10px 18px; }
+    }
+  </style>
+  <script>
+    function toggleContent(id) {
+      const section = document.getElementById(id);
+      section.classList.toggle("open");
+      if (section.classList.contains("open")) {
+        section.style.maxHeight = section.scrollHeight + "px";
+        if (id === "bibliografia") {
+          const items = section.querySelectorAll("li");
+          items.forEach((li, index) => {
+            li.style.animation = `fadeInUp 0.5s forwards ${0.2 * (index + 1)}s`;
+          });
+        }
+      } else {
+        section.style.maxHeight = null;
+      }
+    }
+    function startPoster() {
+      document.querySelector('.cover').style.display = 'none';
+      document.querySelector('.poster').style.display = 'block';
+    }
+    // Lightbox
+    function openLightbox(src) {
+      document.getElementById("lightbox-img").src = src;
+      document.getElementById("lightbox").style.display = "flex";
+    }
+    function closeLightbox() {
+      document.getElementById("lightbox").style.display = "none";
+    }
+    // Gráficos
+    window.onload = function() {
+      const ctx1 = document.getElementById('curvaLactancia');
+      if (ctx1) {
+        new Chart(ctx1, {
+          type: 'line',
+          data: {
+            labels: ["Parto", "Semana 2", "Semana 4", "Semana 6", "Mes 3", "Mes 6", "Mes 9", "Secado"],
+            datasets: [{
+              label: 'Producción de leche (litros/día)',
+              data: [10, 30, 38, 40, 35, 28, 20, 5],
+              borderColor: '#2d6a4f',
+              backgroundColor: 'rgba(45,106,79,0.2)',
+              tension: 0.3,
+              fill: true,
+              pointRadius: 4,
+              pointBackgroundColor: '#52b788'
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: { duration: 3000, easing: 'easeInOutQuart' },
+            plugins: {
+              legend: { display: false },
+              title: { display: true, text: 'Curva de lactancia típica' }
+            },
+            scales: { y: { beginAtZero: true } }
+          }
+        });
+      }
+      const ctx2 = document.getElementById('periodoSeco');
+      if (ctx2) {
+        new Chart(ctx2, {
+          type: 'bar',
+          data: {
+            labels: ["Con período seco", "Sin período seco"],
+            datasets: [{
+              label: 'Producción en siguiente lactancia (litros/día promedio)',
+              data: [35, 20],
+              backgroundColor: ["#2d6a4f", "#95d5b2"]
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              title: { display: true, text: 'Impacto del período seco en la producción' }
+            },
+            scales: { y: { beginAtZero: true } }
+          }
+        });
+      }
+    }
+  </script>
+</head>
+<body>
+  <div class="cover">
+    <img src="Imagen1.png" alt="Logo UNER - Facultad de Ciencias Agropecuarias">
+    <h1>Tecnicatura Universitaria en Organización de Empresas Agropecuarias</h1>
+    <p><b>Carrera:</b> TUOEA</p>
+    <p><b>Asignatura:</b> Producción de Carne y Leche Bovina</p>
+    <p><b>Tema:</b> Ciclo de lactación y período seco</p>
+    <p><b>Integrantes – Grupo 25:</b></p>
+    <div class="integrantes">
+      <ul>
+        <li>Danderfert, Cintia Betiana</li>
+        <li>Danderfert, Julio Cesar</li>
+        <li>González, Leylen Milagros</li>
+        <li>Luna, Daiana Elizabeth</li>
+        <li>Maydana, Maria José</li>
+      </ul>
+      <ul>
+        <li>Pérez, María Julieta</li>
+        <li>Sanabria, Yolanda Mariana</li>
+        <li>Vargas, Leonela Agustina</li>
+        <li>Zarate, Camila</li>
+      </ul>
+    </div>
+    <p><b>Equipo Docente:</b></p>
+    <div class="docentes">
+      <ul>
+        <li>Ing. Agr. Mgter Gonzalo Tentor</li>
+        <li>Ing. Zoo. Mgter Ivan Filip</li>
+        <li>Ing. Agr. Gustavo Toloy</li>
+        <li>Ing. Agr. Prof Sup María Ayelén Franco Donda</li>
+      </ul>
+    </div>
+    <p><b>Fecha de entrega:</b> Martes 09/09/2025</p>
+    <button class="start-btn" onclick="startPoster()">🚀 Empezar</button>
+  </div>
+
+  <div class="poster">
+    <h1>🌱 Grupo 25 – Ciclo de lactación y período seco</h1>
+
+    <section>
+      <div class="toggle" onclick="toggleContent('intro')">📌 Introducción</div>
+      <div class="content" id="intro">
+        <p>El ciclo de lactación comienza tras el parto y se extiende hasta el período seco. Es clave para la <b>salud de la vaca</b> y la <b>rentabilidad del tambo</b>.</p>
+        <img src="IMG-20250902-WA0043.jpg" alt="Vaca y ternero" class="section-img" onclick="openLightbox(this.src)">
+      </div>
+    </section>
+
+    <section>
+      <div class="toggle" onclick="toggleContent('ciclo')">🍼 Ciclo de Lactación</div>
+      <div class="content" id="ciclo">
+        <ul>
+          <li>Parto → Calostro (rico en anticuerpos, dura 4-5 días)</li>
+          <li>Curva de lactancia: ascenso rápido → <b>pico</b> entre la 2ª y 6ª semana → descenso gradual</li>
+          <li>Duración óptima: 305 días lactancia + 60 días seca</li>
+          <li>Persistencia: 94–96% producción mensual</li>
+        </ul>
+        <!-- ✅ Gráfico dentro de la sección -->
+        <div style="height:300px"><canvas id="curvaLactancia"></canvas></div>
+        <img src="IMG-20250902-WA0042.jpg" alt="Curva de lactancia" class="section-img" onclick="openLightbox(this.src)">
+      </div>
+    </section>
+
+    <section>
+      <div class="toggle" onclick="toggleContent('periodo')">🌿 Período Seco</div>
+      <div class="content" id="periodo">
+        <ul>
+          <li>Recuperación física y metabólica</li>
+          <li>Regeneración del tejido mamario</li>
+          <li>Prevención de mastitis</li>
+          <li>Preparación para la próxima lactancia</li>
+        </ul>
+        <div style="height:300px"><canvas id="periodoSeco"></canvas></div>
+        <img src="IMG-20250902-WA0041.jpg" alt="Período seco" class="section-img" onclick="openLightbox(this.src)">
+      </div>
+    </section>
+
+    <section>
+      <div class="toggle" onclick="toggleContent('factores')">⚡ Factores que afectan la producción</div>
+      <div class="content" id="factores">
+        <ul>
+          <li>Genética y raza</li>
+          <li>Alimentación y nutrición</li>
+          <li>Sanidad (mastitis, metabolismo)</li>
+          <li>Manejo del ordeño (rutinas, higiene)</li>
+          <li>Bienestar animal (espacio, confort)</li>
+          <li>Ambiente (clima, agua)</li>
+        </ul>
+        <img src="IMG-20250902-WA0040.jpg" alt="Factores producción" class="section-img" onclick="openLightbox(this.src)">
+      </div>
+    </section>
+
+    <section>
+      <div class="toggle" onclick="toggleContent('rol')">👨‍🌾 Rol del Técnico</div>
+      <div class="content" id="rol">
+        <ul>
+          <li>Planifica partos y lactancias</li>
+          <li>Controla indicadores: litros/vaca/día, persistencia, período seco</li>
+          <li>Organiza recursos: alimentación, personal, instalaciones</li>
+          <li>Implementa protocolos de secado y manejo del estrés</li>
+          <li>Evalúa resultados para optimizar salud y rentabilidad</li>
+        </ul>
+        <img src="IMG-20250902-WA0039.jpg" alt="Rol técnico" class="section-img" onclick="openLightbox(this.src)">
+      </div>
+    </section>
+
+    <section>
+      <div class="toggle" onclick="toggleContent('conclusiones')">✅ Conclusiones</div>
+      <div class="content" id="conclusiones">
+        <p>Un ciclo de lactación bien manejado asegura <b>alta producción</b> y <b>longevidad del rodeo</b>. El período seco es esencial para preparar la próxima lactancia. El Técnico equilibra <b>bienestar animal</b> y <b>eficiencia económica</b>.</p>
+        <img src="IMG-20250902-WA0038.jpg" alt="Conclusiones" class="section-img" onclick="openLightbox(this.src)">
+      </div>
+    </section>
+
+    <section>
+      <div class="toggle" onclick="toggleContent('bibliografia')">📚 Bibliografía</div>
+      <div class="content" id="bibliografia">
+        <ul class="fade-in-list">
+          <li>Cátedra Producción de Carne y Leche Bovina (2025). Unidad 4.</li>
+          <li>TUOEA (2025). Producción de carne y leche bovina – TP1.</li>
+          <li>Zoovetes Mi Pasión (s.f.). Gestación, parto y lactancia bovina.</li>
+        </ul>
+      </div>
+    </section>
+  </div>
+
+  <!-- Lightbox -->
+  <div id="lightbox" class="lightbox" onclick="closeLightbox()">
+    <span class="close-btn" onclick="closeLightbox()">❌</span>
+    <img id="lightbox-img" src="">
+  </div>
+</body>
+</html>
